@@ -1,10 +1,11 @@
 {
   "name": "mini-browser-use",
   "version": "1.0.0",
-  "description": "Minimal browser agent: observe, decide, act",
-  "main": "agent.js",
+  "description": "Minimal LLM browser agent library: observe, decide, act",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "eval": "node evals/run.js"
   },
   "keywords": [],
   "author": "",

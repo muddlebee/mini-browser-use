@@ -1,0 +1,10 @@
+<!doctype html><html><head><title>Checkout</title></head><body style="font-family:sans-serif;margin:24px">
+<h1>Checkout</h1>
+<form onsubmit="event.preventDefault(); const s=document.getElementById('ship').value;
+  document.getElementById('out').textContent = s==='express' ? 'Order placed. Your code is ORD-EXP-42.' : 'Order placed. Your code is ORD-STD-17.';">
+  <label>Shipping
+    <select id="ship"><option value="standard">Standard (5 days)</option><option value="express">Express (1 day)</option></select>
+  </label>
+  <button type="submit">Place order</button>
+</form>
+<p id="out"></p></body></html>
