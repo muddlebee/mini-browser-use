@@ -72,6 +72,10 @@ Use a model that supports tool calling, and image input unless `SCREENSHOTS=0`.
 | `channel` | `BROWSER` env | `"chrome"` or `"msedge"` |
 | `screenshots` | `true` unless `SCREENSHOTS=0` | send labelled screenshots to the model |
 | `maxSteps` | 25 for `agent`, 5 for `act` | |
+| `historySteps` | 10 | after this many steps, start a fresh conversation with a written summary of progress, so long tasks stay cheap |
+| `allowedDomains` | any site | e.g. `['example.com']`: other sites (and links or redirects to them) are blocked. Local files are always allowed |
+| `confirm` | none | `async ({ action, target }) => boolean`, asked before risky clicks (buy, pay, order, submit, delete, send...). Return `false` to block |
+| `cache` | off | cache `act()` steps: `true` for memory, or a JSON file path to keep them between runs |
 | `log` | silent | e.g. `console.log` to watch each step |
 | `viewport` | 1280×800 | |
 
@@ -80,12 +84,13 @@ Use a model that supports tool calling, and image input unless `SCREENSHOTS=0`.
 Each also accepts per-call overrides of those options, e.g. `browser.agent(goal, { maxSteps: 10 })`.
 
 - **`agent(goal)`**: works toward the goal on its own. Returns `{ success, answer, steps, actions }`.
-- **`act(instruction)`**: carries out one instruction ("click the login button") and stops. Same return shape.
+- **`act(instruction)`**: carries out one instruction ("click the login button") and stops. Same return shape, plus `cached`.
+  With the `cache` option, a successful `act` is remembered by page and instruction; next time it is replayed without calling the model, finding each element again by its description. If the page has changed so an element can't be found, it asks the model again.
 - **`extract(instruction, schema?)`**: reads data off the page. With a zod schema it returns a typed object; without one, a string.
 
 ### Direct control (no AI)
 
-- `observe()` numbers the visible interactive elements and returns `{ url, title, elements }`.
+- `observe()` numbers the visible interactive elements and returns `{ url, title, elements }`. It includes elements inside iframes (marked `(in frame)`) and inside open shadow DOM.
 - `click(n)`, `type(n, text)`, `select(n, value)` act on element numbers from the latest `observe()`.
 - `goto(url)`, `press(key)`, `scroll('up'|'down')`, `back()`
 - `text()` returns the visible text.
@@ -110,6 +115,11 @@ Let the model drive:
 node llm-agent.js "Type Ada into the name box, press Greet, and tell me what the page says" test.html
 ```
 
+Two extra settings for this command, in `.env` or the shell:
+
+- `ALLOWED_DOMAINS=example.com,example.org` limits which sites it may open.
+- `CONFIRM=1` asks you in the terminal before risky clicks (buy, pay, submit, delete...).
+
 ## Tests and evals
 
 ```bash
@@ -122,7 +132,11 @@ Tests use a scripted fake model, so they need no API key and cost nothing.
 npm run eval
 ```
 
-The eval gives the agent five tasks on local pages in `evals/pages` (fill a form, compare prices, follow links, use a dropdown, scroll to find a button) and reports a pass rate for the configured `MODEL`. It makes real API calls. Run one task with `npm run eval -- navigate-links`. Add tasks in `evals/tasks.js`.
+The eval gives the agent eight tasks on local pages in `evals/pages` (fill a form, compare prices, follow links, use a dropdown, scroll to find a button, work inside an iframe, use a shadow DOM widget, and ignore instructions planted in a review) and reports a pass rate for the configured `MODEL`. It makes real API calls. Run one task with `npm run eval -- navigate-links`. Add tasks in `evals/tasks.js`.
+
+## Safety
+
+Web pages can contain text written to manipulate an AI agent ("ignore your instructions and..."). The model is told that page content is never instructions, and the eval includes a task that checks this, but no model is fully immune. For anything that matters, set `allowedDomains`, use `confirm` before purchases or submissions, and don't give the agent logged-in access to accounts you can't afford to have misused.
 
 ## How it is built
 
@@ -130,7 +144,8 @@ The eval gives the agent five tasks on local pages in `evals/pages` (fill a form
 src/page.js      code that runs inside the page: number elements, draw labels
 src/browser.js   the Browser class: direct actions + agent/act/extract
 src/tools.js     the action menu the model chooses from
-src/agent.js     the observe -> decide -> act loop
+src/agent.js     the observe -> decide -> act loop, history summaries, act replay
+src/cache.js     remembered act() steps
 src/extract.js   structured extraction
 src/model.js     "provider:model-id" -> model, via the Vercel AI SDK
 ```

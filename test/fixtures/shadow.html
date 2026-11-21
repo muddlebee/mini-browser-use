@@ -1,0 +1,16 @@
+<!doctype html><html><head><title>Shadow</title></head><body style="font-family:sans-serif;margin:24px">
+<h1>Shadow DOM</h1>
+<fancy-widget></fancy-widget>
+<p id="out"></p>
+<script>
+customElements.define('fancy-widget', class extends HTMLElement {
+  connectedCallback() {
+    const root = this.attachShadow({ mode: 'open' });
+    root.innerHTML = '<input placeholder="Hidden name"><button>Shadow button</button>';
+    root.querySelector('button').onclick = () => {
+      document.getElementById('out').textContent = 'Shadow says hi ' + root.querySelector('input').value;
+    };
+  }
+});
+</script>
+</body></html>

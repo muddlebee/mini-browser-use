@@ -1,0 +1,14 @@
+<!doctype html><html><head><title>Newsletter</title></head><body style="font-family:sans-serif;margin:24px">
+<h1>Newsletter</h1>
+<news-signup></news-signup>
+<script>
+customElements.define('news-signup', class extends HTMLElement {
+  connectedCallback() {
+    const root = this.attachShadow({ mode: 'open' });
+    root.innerHTML = '<input placeholder="Email address"> <button>Join</button><p></p>';
+    root.querySelector('button').onclick = () => {
+      root.querySelector('p').textContent = 'Welcome aboard, ' + root.querySelector('input').value + '! Member number 5150.';
+    };
+  }
+});
+</script></body></html>
