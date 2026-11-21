@@ -4,6 +4,10 @@ const { tool } = require('ai');
 const { z } = require('zod');
 const { formatState } = require('./page');
 
+/**
+ * @param {import('./browser').Browser} browser
+ * @param {{ log?: (message: string) => void, record?: (action: object) => void }} [hooks]
+ */
 function browserTools(browser, { log = () => {}, record = () => {} } = {}) {
   const n = z.number().int().describe('Element number from the latest page state');
 

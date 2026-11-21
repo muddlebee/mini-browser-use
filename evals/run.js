@@ -6,6 +6,10 @@ const path = require('path');
 const { Browser, loadEnv, DEFAULT_MODEL } = require('../src');
 const tasks = require('./tasks');
 
+/**
+ * @param {{ model?: string | import('ai').LanguageModel, filter?: string, maxSteps?: number,
+ *           log?: (message: string) => void }} [options]
+ */
 async function runEval({ model, filter = '', maxSteps = 15, log = console.log } = {}) {
   const results = [];
   for (const task of tasks.filter((t) => t.name.includes(filter))) {

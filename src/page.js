@@ -18,7 +18,8 @@ async function observePage(page) {
       '[role=tab],[role=checkbox],[role=menuitem],[onclick],[contenteditable=true],[tabindex]:not([tabindex="-1"])';
     document.querySelectorAll('[data-mbu]').forEach((e) => e.removeAttribute('data-mbu'));
     const out = [];
-    for (const el of document.querySelectorAll(SEL)) {
+    // `any`: the loop handles every element type (inputs, selects, links...) generically.
+    for (const el of /** @type {any[]} */ (Array.from(document.querySelectorAll(SEL)))) {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
       const visible = r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none';
@@ -50,7 +51,7 @@ async function labelledScreenshot(page) {
     const layer = document.createElement('div');
     layer.id = '__mbu_labels';
     layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
-    for (const el of document.querySelectorAll('[data-mbu]')) {
+    for (const el of Array.from(document.querySelectorAll('[data-mbu]'))) {
       const r = el.getBoundingClientRect();
       const box = document.createElement('div');
       box.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;` +

@@ -20,8 +20,18 @@ const ACT_INSTRUCTIONS = `${BASE_INSTRUCTIONS}
 Carry out exactly the user's instruction and nothing more; do not continue to further steps on your own.
 Then call the done tool with a short description of what you did, or with success false if it cannot be done.`;
 
+/**
+ * @typedef {object} LoopOptions
+ * @property {string} [instructions]
+ * @property {string | import('ai').LanguageModel} [model]
+ * @property {number} [maxSteps]
+ * @property {boolean} [screenshots]
+ * @property {(message: string) => void} [log]
+ */
+
 // The screenshot goes in its own user message, not inside a tool result:
 // every vision model accepts images from the user, but not every provider accepts them in tool results.
+/** @returns {Promise<import('ai').UserModelMessage>} */
 async function screenshotMessage(page) {
   const jpeg = await labelledScreenshot(page);
   return {
@@ -33,6 +43,11 @@ async function screenshotMessage(page) {
   };
 }
 
+/**
+ * @param {import('./browser').Browser} browser
+ * @param {string} task
+ * @param {LoopOptions} options
+ */
 async function runLoop(browser, task, { instructions, model, maxSteps = 25, screenshots = true, log = () => {} }) {
   const llm = resolveModel(model);
   const actions = [];
@@ -40,6 +55,7 @@ async function runLoop(browser, task, { instructions, model, maxSteps = 25, scre
   const finish = (success, answer, steps) => ({ success, answer, steps, actions });
 
   // The whole conversation is resent every step: it is the agent's only memory.
+  /** @type {import('ai').ModelMessage[]} */
   const messages = [{ role: 'user', content: `${task}\n\n${formatState(await browser.observe())}` }];
   if (screenshots) messages.push(await screenshotMessage(browser.page));
 
@@ -65,9 +81,11 @@ async function runLoop(browser, task, { instructions, model, maxSteps = 25, scre
   return finish(false, `Gave up after ${maxSteps} steps.`, maxSteps);
 }
 
+/** @param {import('./browser').Browser} browser @param {string} goal @param {LoopOptions} [opts] */
 const runAgent = (browser, goal, opts = {}) =>
   runLoop(browser, `Goal: ${goal}`, { instructions: AGENT_INSTRUCTIONS, ...opts });
 
+/** @param {import('./browser').Browser} browser @param {string} instruction @param {LoopOptions} [opts] */
 const runAct = (browser, instruction, opts = {}) =>
   runLoop(browser, `Instruction: ${instruction}`, { instructions: ACT_INSTRUCTIONS, maxSteps: 5, ...opts });
 
