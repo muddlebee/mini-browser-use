@@ -147,6 +147,13 @@ test('guardrails: confirm is asked before risky clicks only, and can refuse', as
     assert.equal(await b.page.textContent('#out'), 'Order placed');
     assert.equal(asked.length, 2);
     assert.match(asked[0], /Place order/);
+
+    // A submit button with a harmless-sounding label is still asked about.
+    answer = false;
+    ({ elements } = await b.observe());
+    assert.ok(elements.some((l) => l.endsWith('<button type=submit> Go')), elements.join('\n'));
+    await assert.rejects(b.click(numberOf(elements, '> Go')), /The user declined/);
+    assert.equal(asked.length, 3);
   });
 });
 

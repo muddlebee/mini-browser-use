@@ -1,3 +1,4 @@
+// Course: chapter 5 (page.evaluate), 6 (observePage, scanFrame), 8 (labelledScreenshot), 12 (iframes, shadow DOM).
 // Code that runs inside the web page. frame.evaluate() ships each function to the
 // browser as text, runs it there, and sends the return value back as JSON.
 const fs = require('fs');
@@ -51,7 +52,8 @@ function scanFrame({ start, offset, viewport, clearOnly }) {
     let label = clean(el.innerText || el.value || el.placeholder || el.getAttribute('aria-label') ||
       el.title || el.name).slice(0, 60);
     let extra = tag === 'input' ? ` type=${el.type}`
-      : tag === 'a' ? ` -> ${(el.getAttribute('href') || '').slice(0, 50)}` : '';
+      : tag === 'a' ? ` -> ${(el.getAttribute('href') || '').slice(0, 50)}`
+      : tag === 'button' && el.form && el.type === 'submit' ? ' type=submit' : ''; // submits a form
     if (tag === 'select') { // show the current choice, then every option
       label = clean(el.options[el.selectedIndex]?.text);
       extra = ` options=[${Array.from(el.options).map((o) => clean(/** @type {any} */ (o).text)).join(' | ')}]`.slice(0, 150);
