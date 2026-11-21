@@ -3,6 +3,19 @@
 // The "decide" step is a pluggable driver. Here the driver is YOU (stdin).
 const { chromium } = require('playwright');
 const readline = require('readline');
+const fs = require('fs');
+const path = require('path');
+const { pathToFileURL } = require('url');
+
+// Load settings (ANTHROPIC_API_KEY, BROWSER, HEADED) from a .env file next to this script, if present.
+// Variables already set in the shell win over the file.
+try { process.loadEnvFile(path.join(__dirname, '.env')); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+
+// Accept a URL, a bare domain, or a path to a local file (works on Windows too).
+function toUrl(target) {
+  if (fs.existsSync(target)) return pathToFileURL(path.resolve(target)).href;
+  return /^[a-z][a-z0-9+.-]*:/i.test(target) ? target : 'https://' + target;
+}
 
 // ---- 1. OBSERVE: turn the page into a short numbered list of things you can act on
 async function observe(page) {
@@ -33,7 +46,7 @@ async function observe(page) {
 // ---- 2. ACT: a tiny action vocabulary; each one maps to a Playwright call
 const el = (page, i) => page.locator(`[data-mbu="${i}"]`);
 const actions = {
-  goto:   (page, url) => page.goto(/^[a-z]+:/.test(url) ? url : 'https://' + url, { waitUntil: 'domcontentloaded' }),
+  goto:   (page, url) => page.goto(toUrl(url), { waitUntil: 'domcontentloaded' }),
   click:  (page, i) => el(page, i).click({ timeout: 5000 }),
   type:   (page, i, ...words) => el(page, i).fill(words.join(' '), { timeout: 5000 }),
   press:  (page, key) => page.keyboard.press(key),            // Enter, Tab, Escape...
