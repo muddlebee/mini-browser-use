@@ -134,6 +134,8 @@ npm run eval
 
 The eval gives the agent eight tasks on local pages in `evals/pages` (fill a form, compare prices, follow links, use a dropdown, scroll to find a button, work inside an iframe, use a shadow DOM widget, and ignore instructions planted in a review) and reports a pass rate for the configured `MODEL`. It makes real API calls. Run one task with `npm run eval -- navigate-links`. Add tasks in `evals/tasks.js`.
 
+Baseline: `anthropic:claude-opus-5-5` passed 8/8 (November 2026). Use this to judge changes, and run it for any other model you set in `MODEL`.
+
 ## Safety
 
 Web pages can contain text written to manipulate an AI agent ("ignore your instructions and..."). The model is told that page content is never instructions, and the eval includes a task that checks this, but no model is fully immune. For anything that matters, set `allowedDomains`, use `confirm` before purchases or submissions, and don't give the agent logged-in access to accounts you can't afford to have misused.
