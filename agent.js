@@ -43,6 +43,35 @@ async function observe(page) {
   return { url: page.url(), title: await page.title(), elements };
 }
 
+// ---- Screenshot with each element's number drawn on it, so a picture and the list line up.
+// Uses the data-mbu tags set by observe(), so call observe() first. Returns a JPEG buffer.
+async function labelledScreenshot(page) {
+  await page.evaluate(() => {
+    const layer = document.createElement('div');
+    layer.id = '__mbu_labels';
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
+    for (const el of document.querySelectorAll('[data-mbu]')) {
+      const r = el.getBoundingClientRect();
+      const box = document.createElement('div');
+      box.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;` +
+        'outline:2px solid #e11d48;box-sizing:border-box';
+      const tag = document.createElement('span');
+      tag.textContent = el.getAttribute('data-mbu');
+      // Label sits above the box, or inside it when the box touches the top of the screen.
+      tag.style.cssText = `position:absolute;left:-2px;top:${r.top < 16 ? 0 : -16}px;background:#e11d48;color:#fff;` +
+        'font:bold 12px/16px sans-serif;padding:0 4px;border-radius:3px';
+      box.appendChild(tag);
+      layer.appendChild(box);
+    }
+    document.documentElement.appendChild(layer);
+  });
+  try {
+    return await page.screenshot({ type: 'jpeg', quality: 70 });
+  } finally {
+    await page.evaluate(() => document.getElementById('__mbu_labels')?.remove());
+  }
+}
+
 // ---- 2. ACT: a tiny action vocabulary; each one maps to a Playwright call
 const el = (page, i) => page.locator(`[data-mbu="${i}"]`);
 const actions = {
@@ -54,7 +83,7 @@ const actions = {
   scroll: (page, dir = 'down') => page.mouse.wheel(0, dir === 'up' ? -600 : 600),
   back:   (page) => page.goBack(),
   text:   async (page) => console.log((await page.innerText('body')).slice(0, 3000)),
-  shot:   async (page, file = 'shot.png') => { await page.screenshot({ path: file }); console.log('saved', file); },
+  shot:   async (page, file = 'shot.jpg') => { await observe(page); fs.writeFileSync(file, await labelledScreenshot(page)); console.log('saved', file); },
 };
 const HELP = 'commands: goto <url> | click <n> | type <n> <text> | press <key> | select <n> <value> | ' +
   'scroll up|down | back | text | shot [file] | quit';
@@ -84,7 +113,7 @@ function launchBrowser() {
 }
 
 // ---- THE LOOP
-module.exports = { observe, actions, launchBrowser };
+module.exports = { observe, actions, launchBrowser, labelledScreenshot };
 if (require.main === module) (async () => {
   const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });

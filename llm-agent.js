@@ -2,15 +2,19 @@
 // The same observe -> decide -> act loop as agent.js, but Claude decides.
 //   node llm-agent.js "<goal>" [start-url]
 const Anthropic = require('@anthropic-ai/sdk');
-const { observe, actions, launchBrowser } = require('./agent.js');
+const { observe, actions, launchBrowser, labelledScreenshot } = require('./agent.js');
 
 const MODEL = 'claude-opus-5-5';
 const MAX_STEPS = 25;
+// Screenshots on by default; SCREENSHOTS=0 sends only the text element list (cheaper).
+const SCREENSHOTS = process.env.SCREENSHOTS !== '0';
 
 const SYSTEM = `You operate a web browser to complete the user's goal.
 Every tool result ends with the current page: its URL, title, and a numbered list of the interactive
-elements in view. Refer to elements by number. Numbers are reassigned after every action, so only
-ever use numbers from the most recent tool result. Elements below the fold are not listed until you scroll.
+elements in view, usually followed by a screenshot of the visible page with each element outlined in red
+and labelled with its number. Use the screenshot to understand layout, images and anything the list misses;
+act through element numbers. Numbers are reassigned after every action, so only ever use numbers from the
+most recent page state. Elements below the fold are not listed until you scroll.
 When the goal is complete, or you find it cannot be done, stop calling tools and reply with the answer.`;
 
 // ---- The action menu, described so the model can choose from it.
@@ -43,8 +47,18 @@ const toolDefs = TOOLS.map((t) => ({
 const formatState = (s) =>
   `URL: ${s.url}\nTitle: ${s.title}\nElements:\n${s.elements.join('\n') || '(none in view)'}`;
 
+// OBSERVE: the page as content blocks: the element list as text, plus a labelled screenshot.
+async function pageState(page, { withScreenshot = SCREENSHOTS } = {}) {
+  const blocks = [{ type: 'text', text: formatState(await observe(page)) }];
+  if (withScreenshot) {
+    const jpeg = await labelledScreenshot(page);
+    blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: jpeg.toString('base64') } });
+  }
+  return blocks;
+}
+
 // ---- ACT: run one tool call from the model, return what happened plus the new page state
-async function execute(page, call) {
+async function execute(page, call, { withScreenshot }) {
   const tool = TOOLS.find((t) => t.name === call.name);
   let outcome, failed = false;
   try {
@@ -65,14 +79,14 @@ async function execute(page, call) {
     type: 'tool_result',
     tool_use_id: call.id,
     is_error: failed,
-    content: `${outcome}\n\n${formatState(await observe(page))}`,
+    content: [{ type: 'text', text: outcome }, ...(await pageState(page, { withScreenshot }))],
   };
 }
 
 // ---- THE LOOP
 async function run(goal, { page, client, log = console.log }) {
   // The whole conversation is resent every step: that is the agent's only memory.
-  const messages = [{ role: 'user', content: `Goal: ${goal}\n\n${formatState(await observe(page))}` }];
+  const messages = [{ role: 'user', content: [{ type: 'text', text: `Goal: ${goal}` }, ...(await pageState(page))] }];
 
   for (let step = 1; step <= MAX_STEPS; step++) {
     // DECIDE
@@ -82,6 +96,8 @@ async function run(goal, { page, client, log = console.log }) {
       system: SYSTEM,
       tools: toolDefs,
       messages,
+      // Cache the conversation so each step only pays full price for what is new since the last one.
+      cache_control: { type: 'ephemeral' },
       // If a safety classifier declines the request, the API reruns it on a fallback model.
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
@@ -97,10 +113,12 @@ async function run(goal, { page, client, log = console.log }) {
     }
 
     // ACT, one call at a time: each action changes the page and renumbers the elements.
+    // Only the last result gets a screenshot: that is the page Claude acts on next.
     const results = [];
-    for (const call of calls) {
+    for (const [i, call] of calls.entries()) {
       log(`step ${step}: ${call.name} ${JSON.stringify(call.input)}`);
-      results.push(await execute(page, call));
+      const last = i === calls.length - 1;
+      results.push(await execute(page, call, { withScreenshot: SCREENSHOTS && last }));
     }
     messages.push({ role: 'user', content: results }); // all results go back in one message
   }

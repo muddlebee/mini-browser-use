@@ -31,6 +31,7 @@ HEADED=1
 - `ANTHROPIC_API_KEY` — needed only for `llm-agent.js`.
 - `BROWSER` — `chrome` or `msedge` to use an installed browser; leave unset for bundled Chromium.
 - `HEADED` — set to `1` to show the browser window.
+- `SCREENSHOTS` — set to `0` to stop sending screenshots to Claude (cheaper, text list only).
 
 Variables set in your shell take priority over `.env`.
 
@@ -48,7 +49,11 @@ node agent.js test.html
 
 Commands: `goto <url>`, `click <n>`, `type <n> <text>`, `press <key>`, `select <n> <value>`, `scroll up|down`, `back`, `text`, `shot [file]`, `quit`.
 
+`shot` saves the labelled screenshot Claude would see (`shot.jpg` by default).
+
 ## Let Claude drive
+
+After every action Claude gets the numbered element list plus a screenshot with each element outlined in red and labelled with its number, so it can match what it sees to what it can click.
 
 ```bash
 node llm-agent.js "Type Ada into the name box, press Greet, and tell me what the page says" test.html
