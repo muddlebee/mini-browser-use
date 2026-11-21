@@ -1,23 +1,32 @@
 # mini-browser-use
 
-A small library for driving a web browser with an LLM: observe the page, decide an action, act, repeat.
-Works with Claude, GPT, Gemini, or any OpenAI-compatible model.
+**Learn how AI browser agents work by building one from scratch.**
+
+This repository is a course and a working library. The course starts from "what is a web page?", with no web development knowledge assumed, and builds up to an AI that looks at a real browser, decides what to do, clicks and types, and finishes tasks. It works with Claude, GPT, Gemini or any OpenAI-compatible model.
 
 ```js
-const { Browser, z } = require('./src');
-
-const browser = await Browser.launch({ model: 'anthropic:claude-opus-5-5' });
+const browser = await Browser.launch();
 await browser.goto('test.html');
-
-await browser.act('type "Ada" into the name box');           // one AI step
-await browser.act('press the Greet button');
-const data = await browser.extract('the greeting', z.object({ message: z.string() }));  // typed data out
-const result = await browser.agent('greet Grace instead and tell me the greeting');      // a whole task
-
-await browser.close();
+const result = await browser.agent('Type Ada into the name box, press Greet, and tell me what the page says');
+console.log(result.answer);
 ```
 
-## Setup
+## The course
+
+Read it in [`docs/`](docs/index.md), or as a website (see [Docs site](#docs-site)).
+
+| Part | Chapters |
+|---|---|
+| **1. How the web works** | [What is a web page?](docs/part-1-the-web/01-what-is-a-web-page.md) · [The DOM](docs/part-1-the-web/02-the-dom.md) · [How a browser draws a page](docs/part-1-the-web/03-how-a-browser-draws-a-page.md) · [JavaScript and events](docs/part-1-the-web/04-javascript-and-events.md) |
+| **2. Controlling a browser** | [Programs that drive browsers](docs/part-2-controlling-a-browser/05-programs-that-drive-browsers.md) · [Seeing the page](docs/part-2-controlling-a-browser/06-seeing-the-page.md) · [Acting on the page](docs/part-2-controlling-a-browser/07-acting-on-the-page.md) · [Pictures for the model](docs/part-2-controlling-a-browser/08-pictures-for-the-model.md) |
+| **3. Adding a brain** | [How models use tools](docs/part-3-adding-a-brain/09-how-language-models-use-tools.md) · [The agent loop](docs/part-3-adding-a-brain/10-the-agent-loop.md) · [act, extract and caching](docs/part-3-adding-a-brain/11-act-extract-and-caching.md) |
+| **4. The real world** | [The messy real web](docs/part-4-the-real-world/12-the-messy-real-web.md) · [Keeping an agent safe](docs/part-4-the-real-world/13-safety.md) · [Testing and evals](docs/part-4-the-real-world/14-testing-and-evals.md) · [Where to go next](docs/part-4-the-real-world/15-where-next.md) |
+
+Start with [setup](docs/setup.md). There's a [glossary](docs/glossary.md) for every term.
+
+Each chapter has a small runnable script in [`tutorial/`](tutorial/) that shows one idea with plain Playwright. Every file in [`src/`](src/) names the chapters that explain it.
+
+## Quick start
 
 Requires Node 20.12 or newer. Works on Windows, macOS and Linux.
 
@@ -25,29 +34,67 @@ Requires Node 20.12 or newer. Works on Windows, macOS and Linux.
 npm install
 ```
 
-Then pick a browser:
-
-- Use the Chrome you already have: put `BROWSER=chrome` in `.env` (see below). Nothing to download.
-- Or download Playwright's bundled Chromium: `npx playwright install chromium`.
-
-## Configuration (.env)
-
-Copy `.env.example` to `.env` and edit it. `.env` is ignored by git, so your keys stay on your machine.
-
-```
-MODEL=anthropic:claude-opus-5-5
-ANTHROPIC_API_KEY=your-key-here
-BROWSER=chrome
+```bash
+copy .env.example .env
 ```
 
-- `MODEL` — which LLM drives the browser, written as `<provider>:<model-id>`. Default `anthropic:claude-opus-5-5`.
-- An API key for that provider: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY`.
-- `CUSTOM_BASE_URL` and `CUSTOM_API_KEY` — for `MODEL=custom:<model-id>`, any OpenAI-compatible server.
-- `BROWSER` — `chrome` or `msedge` to use an installed browser; leave unset for bundled Chromium.
-- `HEADED` — set to `1` to show the browser window.
-- `SCREENSHOTS` — set to `0` to send only the text element list (cheaper; needed for models without image input).
+(macOS/Linux: `cp .env.example .env`.) In `.env`, set `BROWSER=chrome` to use your installed Chrome, or run `npx playwright install chromium` once. Add an API key for the AI chapters; see [setup](docs/setup.md).
 
-Variables set in your shell take priority over `.env`.
+```bash
+node tutorial/01-open-a-browser.js
+```
+
+## The project
+
+```
+docs/        the course (Markdown, built into a website with VitePress)
+tutorial/    one small script per idea, numbered in course order
+src/         the library
+  page.js      code that runs inside the page: number elements, draw labels       (ch. 5, 6, 8, 12)
+  browser.js   the Browser class: actions, guardrails                             (ch. 5, 7, 13)
+  tools.js     the action menu the model chooses from                             (ch. 9, 10)
+  agent.js     the observe -> decide -> act loop; act and its cache               (ch. 10, 11)
+  extract.js   structured extraction                                              (ch. 11)
+  cache.js     remembered act() steps                                             (ch. 11)
+  model.js     "provider:model-id" -> model, via the Vercel AI SDK                (ch. 9)
+agent.js     drive a browser yourself, typing commands                            (ch. 7)
+llm-agent.js let a model drive toward a goal                                      (ch. 10)
+test/        automated tests with a scripted fake model                           (ch. 14)
+evals/       real-model tasks on small made-up sites                              (ch. 14)
+```
+
+## Library reference
+
+`Browser.launch(options)` opens a browser. Every option is optional:
+
+| Option | Default | |
+|---|---|---|
+| `model` | `MODEL` env, else `anthropic:claude-opus-5-5` | `"provider:model-id"`, or an AI SDK model object |
+| `headless` | `true` unless `HEADED` is set | |
+| `channel` | `BROWSER` env | `"chrome"` or `"msedge"` |
+| `screenshots` | `true` unless `SCREENSHOTS=0` | send labelled screenshots to the model |
+| `maxSteps` | 25 for `agent`, 5 for `act` | |
+| `historySteps` | 10 | start a fresh, summarised conversation after this many steps |
+| `allowedDomains` | any site | e.g. `['example.com']`; other sites, and links or redirects to them, are blocked |
+| `confirm` | none | `async ({ action, target }) => boolean`, asked before risky clicks |
+| `cache` | off | cache `act()` steps: `true` for memory, or a JSON file path |
+| `log` | silent | e.g. `console.log` to watch each step |
+| `viewport` | 1280×800 | |
+
+**AI methods.** Each accepts per-call overrides of the options above.
+
+- `agent(goal)` works toward a goal. Returns `{ success, answer, steps, actions }`.
+- `act(instruction)` carries out one instruction. Same shape, plus `cached`.
+- `extract(instruction, schema?)` reads data off the page; typed with a zod schema, a string without.
+
+**Direct control.**
+
+- `observe()` returns `{ url, title, elements, boxes }`.
+- `click(n)`, `type(n, text)` and `select(n, value)` use numbers from the latest `observe()`.
+- `goto(url)`, `press(key)`, `scroll('up'|'down')`, `back()`, `text()`, `screenshot()`
+- `page` is the Playwright page.
+
+`z` (zod) is re-exported.
 
 ### Models
 
@@ -59,66 +106,17 @@ Variables set in your shell take priority over `.env`.
 | OpenRouter | `custom:<model-id>` with `CUSTOM_BASE_URL=https://openrouter.ai/api/v1` | `CUSTOM_API_KEY` |
 | Ollama (local) | `custom:<model-id>` with `CUSTOM_BASE_URL=http://localhost:11434/v1` | none |
 
-Use a model that supports tool calling, and image input unless `SCREENSHOTS=0`.
-
-## Library API
-
-`Browser.launch(options)` opens a browser. Every option is optional:
-
-| Option | Default | |
-|---|---|---|
-| `model` | `MODEL` env, else `anthropic:claude-opus-5-5` | `"provider:model-id"`, or an AI SDK model object |
-| `headless` | `true` unless `HEADED` is set | |
-| `channel` | `BROWSER` env | `"chrome"` or `"msedge"` |
-| `screenshots` | `true` unless `SCREENSHOTS=0` | send labelled screenshots to the model |
-| `maxSteps` | 25 for `agent`, 5 for `act` | |
-| `historySteps` | 10 | after this many steps, start a fresh conversation with a written summary of progress, so long tasks stay cheap |
-| `allowedDomains` | any site | e.g. `['example.com']`: other sites (and links or redirects to them) are blocked. Local files are always allowed |
-| `confirm` | none | `async ({ action, target }) => boolean`, asked before risky clicks (buy, pay, order, submit, delete, send...). Return `false` to block |
-| `cache` | off | cache `act()` steps: `true` for memory, or a JSON file path to keep them between runs |
-| `log` | silent | e.g. `console.log` to watch each step |
-| `viewport` | 1280×800 | |
-
-### AI methods
-
-Each also accepts per-call overrides of those options, e.g. `browser.agent(goal, { maxSteps: 10 })`.
-
-- **`agent(goal)`**: works toward the goal on its own. Returns `{ success, answer, steps, actions }`.
-- **`act(instruction)`**: carries out one instruction ("click the login button") and stops. Same return shape, plus `cached`.
-  With the `cache` option, a successful `act` is remembered by page and instruction; next time it is replayed without calling the model, finding each element again by its description. If the page has changed so an element can't be found, it asks the model again.
-- **`extract(instruction, schema?)`**: reads data off the page. With a zod schema it returns a typed object; without one, a string.
-
-### Direct control (no AI)
-
-- `observe()` numbers the visible interactive elements and returns `{ url, title, elements }`. It includes elements inside iframes (marked `(in frame)`) and inside open shadow DOM.
-- `click(n)`, `type(n, text)`, `select(n, value)` act on element numbers from the latest `observe()`.
-- `goto(url)`, `press(key)`, `scroll('up'|'down')`, `back()`
-- `text()` returns the visible text.
-- `screenshot()` returns a JPEG with the elements labelled.
-- `page` is the underlying Playwright page, for anything else.
-
-`z` (zod) is re-exported for writing schemas. See `examples/basic.js` for a runnable example.
-
-## Commands
-
-Drive it yourself, typing commands like `click 1` or `type 0 hello`:
+### Commands
 
 ```bash
 node agent.js test.html
 ```
 
-Commands: `goto <url>`, `click <n>`, `type <n> <text>`, `press <key>`, `select <n> <value>`, `scroll up|down`, `back`, `text`, `shot [file]`, `quit`. `shot` saves the labelled screenshot the model would see.
-
-Let the model drive:
-
 ```bash
-node llm-agent.js "Type Ada into the name box, press Greet, and tell me what the page says" test.html
+node llm-agent.js "What is the capital of Zorbia?" evals/pages/index.html
 ```
 
-Two extra settings for this command, in `.env` or the shell:
-
-- `ALLOWED_DOMAINS=example.com,example.org` limits which sites it may open.
-- `CONFIRM=1` asks you in the terminal before risky clicks (buy, pay, submit, delete...).
+The first lets you drive with commands like `click 1`. The second lets the model drive. For the second, `ALLOWED_DOMAINS=...` and `CONFIRM=1` in `.env` add guardrails.
 
 ## Tests and evals
 
@@ -126,28 +124,26 @@ Two extra settings for this command, in `.env` or the shell:
 npm test
 ```
 
-Tests use a scripted fake model, so they need no API key and cost nothing.
-
 ```bash
 npm run eval
 ```
 
-The eval gives the agent eight tasks on local pages in `evals/pages` (fill a form, compare prices, follow links, use a dropdown, scroll to find a button, work inside an iframe, use a shadow DOM widget, and ignore instructions planted in a review) and reports a pass rate for the configured `MODEL`. It makes real API calls. Run one task with `npm run eval -- navigate-links`. Add tasks in `evals/tasks.js`.
-
-Baseline: `anthropic:claude-opus-5-5` passed 8/8 (November 2026). Use this to judge changes, and run it for any other model you set in `MODEL`.
+Tests use a fake model: no key, no cost. Evals run 8 tasks on local made-up sites against a real model. Baseline: `anthropic:claude-opus-5-5` passed 8/8 (November 2026). See [chapter 14](docs/part-4-the-real-world/14-testing-and-evals.md).
 
 ## Safety
 
-Web pages can contain text written to manipulate an AI agent ("ignore your instructions and..."). The model is told that page content is never instructions, and the eval includes a task that checks this, but no model is fully immune. For anything that matters, set `allowedDomains`, use `confirm` before purchases or submissions, and don't give the agent logged-in access to accounts you can't afford to have misused.
+Pages can contain text written to manipulate an AI ("ignore your instructions and..."). The model is told page content is never instructions, but no model is fully immune. Use `allowedDomains` and `confirm`, and don't give an agent logged-in access you can't afford to have misused. See [chapter 13](docs/part-4-the-real-world/13-safety.md).
 
-## How it is built
+## Docs site
 
+The course is a [VitePress](https://vitepress.dev) site:
+
+```bash
+npm run docs:dev
 ```
-src/page.js      code that runs inside the page: number elements, draw labels
-src/browser.js   the Browser class: direct actions + agent/act/extract
-src/tools.js     the action menu the model chooses from
-src/agent.js     the observe -> decide -> act loop, history summaries, act replay
-src/cache.js     remembered act() steps
-src/extract.js   structured extraction
-src/model.js     "provider:model-id" -> model, via the Vercel AI SDK
+
+```bash
+npm run docs:build
 ```
+
+The build writes a static site to `docs/.vitepress/dist`, ready for any static host. For GitHub Pages under the repository path, build with `DOCS_BASE=/mini-browser-use/`. To refresh the screenshots in the docs, run `node docs/scripts/generate-images.js`.

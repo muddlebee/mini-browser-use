@@ -1,3 +1,4 @@
+// Course: chapter 11.
 // Read information off the current page and return it as typed data, validated by a zod schema.
 const { generateText, Output } = require('ai');
 const { z } = require('zod');

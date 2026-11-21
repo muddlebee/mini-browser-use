@@ -1,3 +1,4 @@
+// Course: chapter 5 (launch), 7 (actions, element, settle), 13 (allowedDomains, confirm).
 // The Browser class: a Playwright page plus the actions and AI methods built on it.
 const { chromium } = require('playwright');
 const { toUrl, observePage, labelledScreenshot, describe } = require('./page');

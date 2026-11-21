@@ -1,3 +1,4 @@
+// Course: chapter 10 (the loop, done, history summaries) and 11 (act and its cache replay).
 // The agent loop: observe -> ask the model -> run the actions it picks -> repeat.
 // Shared by browser.agent() (open-ended goal) and browser.act() (one instruction).
 const { generateText } = require('ai');

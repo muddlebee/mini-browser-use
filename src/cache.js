@@ -1,3 +1,4 @@
+// Course: chapter 11.
 // Remembers how act() carried out an instruction on a page, so the next time the same
 // instruction runs on the same page it can be replayed without calling the model.
 // Elements are remembered by description ("<button> Greet"), not number, since numbers change.

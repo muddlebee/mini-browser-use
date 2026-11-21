@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Course: chapter 10.
 // Let an LLM drive the browser toward a goal.
 //   node llm-agent.js "<goal>" [start-url]
 // Pick the model with MODEL=<provider>:<model-id> in .env (see .env.example).

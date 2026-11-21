@@ -1,3 +1,4 @@
+// Course: chapter 9.
 // Turn "provider:model-id" into a model object any AI SDK function accepts.
 const { createProviderRegistry } = require('ai');
 const { anthropic } = require('@ai-sdk/anthropic');

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Course: chapter 7 (you are the brain).
 // Drive the browser yourself: see the numbered elements, type a command, repeat.
 //   node agent.js [url]
 const path = require('path');

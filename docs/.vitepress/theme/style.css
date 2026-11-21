@@ -1,0 +1,6 @@
+/* Screenshots of pages are mostly white; frame them so they stand apart from the text. */
+.vp-doc img {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}

@@ -1,3 +1,4 @@
+// Course: chapter 9 (tools) and 10 (how tool results feed the loop).
 // The action menu the model chooses from. Each tool describes itself (description + zod
 // schema) and carries the code that runs it; the AI SDK translates it for each provider.
 const { tool } = require('ai');

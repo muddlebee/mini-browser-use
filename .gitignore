@@ -1,3 +1,6 @@
 node_modules/
 shot.jpg
 .env
+tutorial/output/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
