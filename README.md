@@ -29,4 +29,11 @@ export ANTHROPIC_API_KEY=your-key
 node llm-agent.js "Type Ada into the name box, press Greet, and tell me what the page says" file://$PWD/test.html
 ```
 
-Set `HEADED=1` to watch the browser window.
+## Options
+
+- `HEADED=1` shows the browser window.
+- `BROWSER=chrome` uses the Chrome installed on your machine instead of Playwright's bundled Chromium, so you can skip `npx playwright install chromium`. `BROWSER=msedge` does the same for Edge.
+
+```bash
+BROWSER=chrome HEADED=1 node agent.js https://example.com
+```

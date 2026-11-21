@@ -60,10 +60,20 @@ function humanDriver() {
   };
 }
 
+// BROWSER=chrome (or msedge) drives the browser installed on this machine
+// instead of Playwright's bundled Chromium.
+function launchBrowser() {
+  const channel = process.env.BROWSER;
+  return chromium.launch({
+    headless: !process.env.HEADED,
+    ...(channel && channel !== 'chromium' ? { channel } : {}),
+  });
+}
+
 // ---- THE LOOP
-module.exports = { observe, actions };
+module.exports = { observe, actions, launchBrowser };
 if (require.main === module) (async () => {
-  const browser = await chromium.launch({ headless: !process.env.HEADED });
+  const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   const decide = humanDriver();
   if (process.argv[2]) await actions.goto(page, process.argv[2]);

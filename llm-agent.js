@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // The same observe -> decide -> act loop as agent.js, but Claude decides.
 //   node llm-agent.js "<goal>" [start-url]
-const { chromium } = require('playwright');
 const Anthropic = require('@anthropic-ai/sdk');
-const { observe, actions } = require('./agent.js');
+const { observe, actions, launchBrowser } = require('./agent.js');
 
 const MODEL = 'claude-opus-5-5';
 const MAX_STEPS = 25;
@@ -113,7 +112,7 @@ module.exports = { run };
 if (require.main === module) (async () => {
   const [goal, startUrl] = process.argv.slice(2);
   if (!goal) { console.error('usage: node llm-agent.js "<goal>" [start-url]'); process.exit(1); }
-  const browser = await chromium.launch({ headless: !process.env.HEADED });
+  const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   if (startUrl) await actions.goto(page, startUrl);
   try {
